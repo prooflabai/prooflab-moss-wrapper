@@ -47,4 +47,5 @@ app.post("/api/analyze", async (req, res) => {
 });
 
 app.get("/", (req, res) => res.send("ProofLabAI MOSS Wrapper running ✅"));
-app.listen(process.env.PORT || 3000, () => console.log("MOSS Wrapper active"));
+app.listen(process.env.PORT, () => console.log(`MOSS Wrapper active on port ${process.env.PORT}`));
+

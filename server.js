@@ -2,43 +2,60 @@ import express from "express";
 import bodyParser from "body-parser";
 
 const app = express();
-app.use(bodyParser.json());
 
-console.log("✅ ProofLabAI MOSS Wrapper is live (ESM mode)");
+// Ensure all types of JSON are parsed
+app.use(bodyParser.json({ limit: "2mb" }));
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// Root route
+console.log("✅ ProofLabAI MOSS Wrapper (Debug Mode) started");
+
+// Health check route (for Render)
 app.get("/", (req, res) => {
-  res.send("ProofLabAI MOSS Wrapper working ✅");
+  res.status(200).send("ProofLabAI MOSS Wrapper is running ✅");
 });
 
-// POST route for MOSS verification
+// Main POST route for MOSS verification
 app.post("/", async (req, res) => {
-  try {
-    console.log("📥 Incoming POST request...");
-    console.log("🧾 Raw body:", JSON.stringify(req.body));
+  console.log("📥 Received POST request at /");
 
-    const { repo_url, language } = req.body || {};
+  try {
+    // Defensive: log everything
+    console.log("🧾 Full request body:", req.body);
+
+    // If Render doesn’t parse JSON automatically, try fallback
+    let repo_url = req.body?.repo_url || req.query?.repo_url;
+    let language = req.body?.language || "unknown";
 
     if (!repo_url) {
-      console.error("❌ Missing repo_url or invalid request body");
-      return res.status(400).json({ error: "repo_url missing" });
+      console.error("❌ repo_url missing in body. Body was:", req.body);
+      return res.status(400).json({
+        status: "error",
+        message: "repo_url missing or invalid body format",
+        received_body: req.body
+      });
     }
 
-    console.log(`🔍 Running MOSS check for ${repo_url} (${language || "unspecified"})`);
+    console.log(`🔍 MOSS Check started for: ${repo_url}, Language: ${language}`);
 
-    // Mock response for testing
+    // Mock logic (replace later with real moss.pl)
     const mossReportUrl = `http://moss.stanford.edu/results/mock/${Date.now()}`;
-    res.status(200).json({
+    console.log("✅ Generated mock MOSS report:", mossReportUrl);
+
+    // Respond with success JSON
+    return res.status(200).json({
+      status: "success",
       similarity_score: "auto",
-      report_url: mossReportUrl,
-      status: "success"
+      report_url: mossReportUrl
     });
 
-  } catch (error) {
-    console.error("💥 Internal error:", error);
-    res.status(500).json({ error: error.message || "Internal Server Error" });
+  } catch (err) {
+    console.error("💥 Unhandled server error:", err);
+    return res.status(500).json({
+      status: "error",
+      message: err.message || "Internal server error"
+    });
   }
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 MOSS Wrapper running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

@@ -1,38 +1,47 @@
-import express from "express";
-import bodyParser from "body-parser";
+// Use CommonJS style for compatibility with Render Node
+const express = require("express");
+const bodyParser = require("body-parser");
 
 const app = express();
 app.use(bodyParser.json());
 
+// Confirm server start
 console.log("✅ ProofLabAI MOSS Wrapper is live");
 
+// Basic test route
 app.get("/", (req, res) => {
   res.send("ProofLabAI MOSS Wrapper working ✅");
 });
 
+// Main POST route
 app.post("/", async (req, res) => {
   try {
-    console.log("📥 Incoming request body:", req.body);
-    const { repo_url, language } = req.body;
+    console.log("📥 Incoming POST request...");
 
+    // Log the entire request body for debugging
+    console.log("🧾 Raw body:", JSON.stringify(req.body));
+
+    const { repo_url, language } = req.body || {};
+
+    // Defensive checks
     if (!repo_url) {
-      console.error("❌ Missing repo_url in request");
-      return res.status(500).json({ error: "Submission not found" });
+      console.error("❌ Missing repo_url or invalid body");
+      return res.status(400).json({ error: "repo_url missing" });
     }
 
-    console.log(`🔍 Checking ${repo_url} (${language}) ...`);
+    console.log(`🔍 Running MOSS check for ${repo_url} (${language || "unspecified"})`);
 
-    // Simulated MOSS output for testing
+    // Simulated successful response
     const mossReportUrl = `http://moss.stanford.edu/results/mock/${Date.now()}`;
-    res.json({
+    res.status(200).json({
       similarity_score: "auto",
       report_url: mossReportUrl,
       status: "success"
     });
 
   } catch (error) {
-    console.error("💥 Error:", error);
-    res.status(500).json({ error: error.message });
+    console.error("💥 Internal error:", error);
+    res.status(500).json({ error: error.message || "Internal Server Error" });
   }
 });
 

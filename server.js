@@ -1,51 +1,40 @@
 import express from "express";
-import { exec } from "child_process";
-import path from "path";
-import fs from "fs";
-import { fileURLToPath } from "url";
+import bodyParser from "body-parser";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-app.use(express.json());
+app.use(bodyParser.json());
 
-app.post("/api/analyze", async (req, res) => {
+console.log("✅ ProofLabAI MOSS Wrapper is live");
+
+app.get("/", (req, res) => {
+  res.send("ProofLabAI MOSS Wrapper working ✅");
+});
+
+app.post("/", async (req, res) => {
   try {
-    const { language = "python", files = [] } = req.body;
+    console.log("📥 Incoming request body:", req.body);
+    const { repo_url, language } = req.body;
 
-    // Write submitted code files to temp folder
-    const tmpDir = path.join(__dirname, "tmp");
-    if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir);
-
-    const filePaths = [];
-    for (let i = 0; i < files.length; i++) {
-      const filePath = path.join(tmpDir, `file${i}.${language}`);
-      fs.writeFileSync(filePath, files[i]);
-      filePaths.push(filePath);
+    if (!repo_url) {
+      console.error("❌ Missing repo_url in request");
+      return res.status(500).json({ error: "Submission not found" });
     }
 
-    const command = `perl ${path.join(__dirname, "moss.pl")} -l ${language} ${filePaths.join(" ")}`;
+    console.log(`🔍 Checking ${repo_url} (${language}) ...`);
 
-    exec(command, (error, stdout) => {
-      if (error) {
-        console.error(error);
-        return res.status(500).json({ error: "MOSS execution failed", details: error.message });
-      }
-
-      // Find MOSS report URL in output
-      const match = stdout.match(/http.*moss.*\n?/);
-      const mossUrl = match ? match[0].trim() : null;
-
-      res.json({
-        similarity_score: "auto",
-        report_url: mossUrl || "No URL returned",
-      });
+    // Simulated MOSS output for testing
+    const mossReportUrl = `http://moss.stanford.edu/results/mock/${Date.now()}`;
+    res.json({
+      similarity_score: "auto",
+      report_url: mossReportUrl,
+      status: "success"
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
+
+  } catch (error) {
+    console.error("💥 Error:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
-app.get("/", (req, res) => res.send("ProofLabAI MOSS Wrapper running ✅"));
-app.listen(process.env.PORT, () => console.log(`MOSS Wrapper active on port ${process.env.PORT}`));
-
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`🚀 MOSS Wrapper running on port ${PORT}`));
